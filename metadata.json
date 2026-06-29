@@ -1,0 +1,6 @@
+{
+  "name": "عباية الستراس الفاخرة - صفحة الهبوط السريعة",
+  "description": "صفحة هبوط فائقة السرعة ومحسنة للجوال لطلب عباية الستراس الفاخرة مع صفحة شكر متكاملة وتتبع الطلبات وتأكيدها.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
