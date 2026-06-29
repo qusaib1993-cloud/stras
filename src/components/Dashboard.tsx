@@ -138,7 +138,7 @@ export default function Dashboard({ orders, onUpdateOrderStatus, onAddManualOrde
             ♛
           </div>
           <div>
-            <h1 className="text-base font-extrabold text-white">لوحة تحكم المبيعات - دار الملكة</h1>
+            <h1 className="text-base font-extrabold text-white">لوحة تحكم المبيعات - حكاية خيط</h1>
             <p className="text-[11px] text-neutral-400">نظام إدارة مبيعات وتتبع أداء حملة Meta Ads الحالية</p>
           </div>
         </div>
@@ -566,7 +566,7 @@ export default function Dashboard({ orders, onUpdateOrderStatus, onAddManualOrde
               {/* Physical Attributes Size Guide */}
               <div className="grid grid-cols-2 gap-3 bg-[#111111]/40 p-3 rounded-xl border border-white/5">
                 <div>
-                  <label className="block text-[10px] text-neutral-400 font-bold mb-1">الوزن التقريبي (كغم)</label>
+                  <label className="block text-[10px] text-neutral-400 font-bold mb-1">الوزن (كغم)</label>
                   <input 
                     type="number"
                     value={manualWeight}
@@ -577,7 +577,7 @@ export default function Dashboard({ orders, onUpdateOrderStatus, onAddManualOrde
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-neutral-400 font-bold mb-1">الطول التقريبي (سم)</label>
+                  <label className="block text-[10px] text-neutral-400 font-bold mb-1">الطول (سم)</label>
                   <input 
                     type="number"
                     value={manualHeight}

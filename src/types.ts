@@ -34,6 +34,7 @@ export interface ColorOption {
   code: string;
   hex: string;
   secondaryHex?: string;
+  image: string;
 }
 
 export interface Review {

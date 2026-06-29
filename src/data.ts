@@ -24,13 +24,13 @@ export const OFFERS: Offer[] = [
 ];
 
 export const COLORS: ColorOption[] = [
-  { id: 'black', name: 'أسود الملكي C#1', code: 'C#1', hex: '#111111', secondaryHex: '#d4af37' },
-  { id: 'charcoal', name: 'رمادي فحمي C#2', code: 'C#2', hex: '#2b2b2a', secondaryHex: '#9d6b7c' },
-  { id: 'sky-blue', name: 'أزرق سماوي C#3', code: 'C#3', hex: '#8ca9c2', secondaryHex: '#ffffff' },
-  { id: 'dark-green', name: 'أخضر داكن C#5', code: 'C#5', hex: '#1e3325', secondaryHex: '#d4af37' },
-  { id: 'burgundy', name: 'برغندي عميق C#6', code: 'C#6', hex: '#4a121a', secondaryHex: '#d4af37' },
-  { id: 'dusty-rose', name: 'وردي عتيق C#7', code: 'C#7', hex: '#875667', secondaryHex: '#ffffff' },
-  { id: 'beige', name: 'بيج رمادي C#9', code: 'C#9', hex: '#b0a68d', secondaryHex: '#111111' }
+  { id: 'black', name: 'أسود الملكي C#1', code: 'C#1', hex: '#111111', secondaryHex: '#d4af37', image: '/abaya_C1_black.webp' },
+  { id: 'charcoal', name: 'رمادي غامق C#2', code: 'C#2', hex: '#2b2b2a', secondaryHex: '#9d6b7c', image: '/abaya_C2_gray.webp' },
+  { id: 'sky-blue', name: 'أزرق سماوي C#3', code: 'C#3', hex: '#8ca9c2', secondaryHex: '#ffffff', image: '/abaya_C3_skyblue.webp' },
+  { id: 'dark-green', name: 'أخضر زيتي C#5', code: 'C#5', hex: '#1e3325', secondaryHex: '#d4af37', image: '/abaya_C5_green.webp' },
+  { id: 'burgundy', name: 'خمري عميق C#6', code: 'C#6', hex: '#4a121a', secondaryHex: '#d4af37', image: '/abaya_C6_burgundy.webp' },
+  { id: 'dusty-rose', name: 'زهري عتيق C#7', code: 'C#7', hex: '#875667', secondaryHex: '#ffffff', image: '/abaya_C7_pink.webp' },
+  { id: 'beige', name: 'بيج كلاسيك C#9', code: 'C#9', hex: '#b0a68d', secondaryHex: '#111111', image: '/abaya_C9_beige.webp' }
 ];
 
 export const REVIEWS: Review[] = [

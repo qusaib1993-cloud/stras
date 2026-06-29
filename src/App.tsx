@@ -17,7 +17,7 @@ export default function App() {
 
   // Load orders from localStorage on mount, else populate with realistic seeds
   useEffect(() => {
-    const saved = localStorage.getItem('dar_al_malika_orders');
+    const saved = localStorage.getItem('hekaya_khait_orders');
     if (saved) {
       try {
         setOrders(JSON.parse(saved));
@@ -26,14 +26,14 @@ export default function App() {
       }
     } else {
       setOrders(INITIAL_ORDERS);
-      localStorage.setItem('dar_al_malika_orders', JSON.stringify(INITIAL_ORDERS));
+      localStorage.setItem('hekaya_khait_orders', JSON.stringify(INITIAL_ORDERS));
     }
   }, []);
 
   // Sync state changes with localStorage
   const saveOrders = (updatedOrders: Order[]) => {
     setOrders(updatedOrders);
-    localStorage.setItem('dar_al_malika_orders', JSON.stringify(updatedOrders));
+    localStorage.setItem('hekaya_khait_orders', JSON.stringify(updatedOrders));
   };
 
   // 1. Submit Order from Landing Page
@@ -107,11 +107,12 @@ export default function App() {
   };
 
   return (
-    <main className="min-h-screen bg-[#111111] selection:bg-[#9d6b7c] selection:text-white">
+    <main className="min-h-screen bg-[#111111] selection:bg-[#875667] selection:text-white">
       {view === 'landing' && (
         <LandingPage 
           onOrderSubmit={handleOrderSubmit} 
           onGoToDashboard={() => setView('dashboard')}
+          orders={orders}
         />
       )}
 

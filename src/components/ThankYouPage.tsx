@@ -49,7 +49,7 @@ export default function ThankYouPage({ order, onGoBack }: ThankYouPageProps) {
           <p className="text-neutral-400 font-medium">عذراً، لم يتم العثور على بيانات الطلب الحالية.</p>
           <button 
             onClick={onGoBack}
-            className="mt-4 bg-[#9d6b7c] text-white px-5 py-2 rounded-xl text-sm font-bold cursor-pointer"
+            className="mt-4 bg-[#875667] text-white px-5 py-2 rounded-xl text-sm font-bold cursor-pointer"
           >
             العودة لصفحة الهبوط
           </button>
@@ -64,7 +64,7 @@ export default function ThankYouPage({ order, onGoBack }: ThankYouPageProps) {
         
         {/* Top Header Logo */}
         <div className="bg-[#111111] py-5 px-4 text-center border-b border-white/5">
-          <h2 className="text-xs uppercase tracking-widest text-[#d4af37] font-semibold">دار الملكة للعبايات الفاخرة</h2>
+          <h2 className="text-xs uppercase tracking-widest text-[#849a71] font-semibold">حكاية خيط للعبايات الفاخرة</h2>
         </div>
 
         {/* Dynamic Meta Pixel Success Notification HUD */}
@@ -96,7 +96,7 @@ export default function ThankYouPage({ order, onGoBack }: ThankYouPageProps) {
           {/* Receipt / Order details */}
           <div className="bg-[#161616] border border-white/5 rounded-2xl p-5 shadow-inner">
             <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
-              <h3 className="font-bold text-xs uppercase tracking-widest text-[#9d6b7c] flex items-center gap-1.5">
+              <h3 className="font-bold text-xs uppercase tracking-widest text-[#875667] flex items-center gap-1.5">
                 <ShoppingBag className="w-4 h-4" />
                 <span>تفاصيل فاتورة طلبكِ:</span>
               </h3>
@@ -164,7 +164,7 @@ export default function ThankYouPage({ order, onGoBack }: ThankYouPageProps) {
 
               <div className="flex justify-between items-center text-sm pt-2">
                 <span className="font-bold text-white">المجموع المطلوب للدفع:</span>
-                <span className="font-extrabold text-base text-[#d4af37] font-mono">{order.totalPrice} دينار أردني</span>
+                <span className="font-extrabold text-base text-[#849a71] font-mono">{order.totalPrice} دينار أردني</span>
               </div>
 
             </div>
@@ -183,8 +183,8 @@ export default function ThankYouPage({ order, onGoBack }: ThankYouPageProps) {
 
           {/* Next Steps Warning */}
           <div className="mt-5 bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-xs text-amber-400 leading-relaxed">
-            <h4 className="font-bold flex items-center gap-1.5 mb-1.5 text-[#d4af37]">
-              <PhoneCall className="w-4 h-4 shrink-0 animate-bounce text-[#d4af37]" />
+            <h4 className="font-bold flex items-center gap-1.5 mb-1.5 text-[#849a71]">
+              <PhoneCall className="w-4 h-4 shrink-0 animate-bounce text-[#849a71]" />
               <span>📢 الخطوة القادمة الهامة جداً:</span>
             </h4>
             سيقوم فريق خدمة العملاء لدينا بالتواصل معكِ هاتفياً خلال الـ 24 ساعة القادمة (من الرقم الخاص بنا) لتأكيد موعد الشحن والتسليم لباب بيتكِ. <strong className="underline text-amber-300">يرجى إبقاء هاتفكِ متاحاً للرد لتجنب إلغاء الطلب تلقائياً.</strong>
@@ -194,7 +194,7 @@ export default function ThankYouPage({ order, onGoBack }: ThankYouPageProps) {
           <div className="mt-6 space-y-2.5">
             {/* Live support via WhatsApp */}
             <a 
-              href={`https://wa.me/962790000000?text=${encodeURIComponent(`أهلاً دار الملكة، قمت بطلب عباية الستراس ورقم طلبي هو ${order.id} باسم ${order.name}. أريد تعديل أو متابعة الطلب.`)}`}
+              href={`https://wa.me/962775347250?text=${encodeURIComponent(`أهلاً حكاية خيط، قمت بطلب عباية الستراس ورقم طلبي هو ${order.id} باسم ${order.name}. أريد تعديل أو متابعة الطلب.`)}`}
               target="_blank"
               rel="noreferrer noopener"
               className="w-full bg-[#25d366] hover:bg-[#20ba5a] text-white font-bold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
@@ -219,7 +219,7 @@ export default function ThankYouPage({ order, onGoBack }: ThankYouPageProps) {
 
         {/* Footer info */}
         <footer className="bg-[#111111] text-neutral-500 py-4 text-center px-4 text-[10px] border-t border-white/5 mt-12">
-          <p>© {new Date().getFullYear()} دار الملكة للعبايات الفاخرة. جميع الحقوق محفوظة.</p>
+          <p>© {new Date().getFullYear()} حكاية خيط للعبايات الفاخرة. جميع الحقوق محفوظة.</p>
         </footer>
 
       </div>

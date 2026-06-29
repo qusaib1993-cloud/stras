@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { OFFERS, COLORS, REVIEWS } from '../data';
-import { ColorOption, Offer } from '../types';
+import { ColorOption, Offer, Order } from '../types';
 import { 
   Sparkles, 
   Truck, 
@@ -25,8 +25,35 @@ import {
   Heart,
   Quote,
   LayoutGrid,
-  MessageSquare
+  MessageSquare,
+  Search,
+  Package,
+  AlertCircle,
+  X
 } from 'lucide-react';
+
+const JORDAN_CITIES = [
+  'عمان',
+  'إربد',
+  'الزرقاء',
+  'البلقاء',
+  'العقبة',
+  'مأدبا',
+  'جرش',
+  'عجلون',
+  'المفرق',
+  'الكرك',
+  'الطفيلة',
+  'معان'
+];
+
+const getRecommendedSize = (h: number) => {
+  if (h < 153) return '132';
+  if (h < 159) return '137';
+  if (h < 165) return '142';
+  if (h < 171) return '147';
+  return '152';
+};
 
 interface LandingPageProps {
   onOrderSubmit: (order: {
@@ -39,6 +66,7 @@ interface LandingPageProps {
     address: string;
   }) => void;
   onGoToDashboard: () => void;
+  orders?: Order[];
 }
 
 const LANDING_TESTIMONIALS = [
@@ -110,7 +138,13 @@ const LANDING_TESTIMONIALS = [
   }
 ];
 
-export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingPageProps) {
+export default function LandingPage({ onOrderSubmit, onGoToDashboard, orders = [] }: LandingPageProps) {
+  // Tracking states
+  const [trackingInput, setTrackingInput] = useState('');
+  const [trackingResults, setTrackingResults] = useState<Order[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [trackingError, setTrackingError] = useState('');
+
   // Form states
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -118,7 +152,9 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [weight, setWeight] = useState(70);
   const [height, setHeight] = useState(160);
+  const [selectedLength, setSelectedLength] = useState('142');
   const [address, setAddress] = useState('');
+  const [city, setCity] = useState('عمان');
   const [formError, setFormError] = useState('');
 
   // Testimonials states
@@ -150,6 +186,49 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
   const scrollToForm = (e: React.MouseEvent) => {
     e.preventDefault();
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleTrackOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTrackingError('');
+    setHasSearched(true);
+
+    const query = trackingInput.trim().toUpperCase();
+    if (!query) {
+      setTrackingError('يرجى إدخال رقم الطلب أو رقم الهاتف للبحث.');
+      setTrackingResults([]);
+      return;
+    }
+
+    // Load latest orders from localStorage as fallback/primary to ensure real-time lookup
+    let currentOrders = orders;
+    try {
+      const saved = localStorage.getItem('hekaya_khait_orders');
+      if (saved) {
+        currentOrders = JSON.parse(saved);
+      }
+    } catch (err) {
+      // fallback
+    }
+
+    const cleanPhoneQuery = query.replace(/[\s-()]/g, '');
+
+    const found = currentOrders.filter(o => {
+      const orderId = o.id.toUpperCase();
+      const orderPhone = o.phone.replace(/[\s-()]/g, '');
+      
+      const matchesId = orderId === query || orderId === `ORD-${query}` || orderId.endsWith(query);
+      const matchesPhone = cleanPhoneQuery.length >= 6 && (orderPhone.includes(cleanPhoneQuery) || cleanPhoneQuery.includes(orderPhone));
+
+      return matchesId || matchesPhone;
+    });
+
+    if (found.length === 0) {
+      setTrackingError('عذراً، لم نتمكن من العثور على أي طلب يطابق البيانات المدخلة. يرجى التأكد من الرقم والمحاولة مرة أخرى.');
+      setTrackingResults([]);
+    } else {
+      setTrackingResults(found);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -188,7 +267,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
       color: selectedColor.name,
       weight,
       height,
-      address
+      address: `${city} - ${address}`
     });
   };
 
@@ -209,11 +288,11 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
         </button>
 
         {/* 1. Header Urgency Banner */}
-        <header className="bg-[#d4af37] py-2.5 px-4 text-center sticky top-0 z-40 text-black font-extrabold text-xs shadow-md">
+        <header className="bg-[#4c6442] py-2.5 px-4 text-center sticky top-0 z-40 text-white font-extrabold text-xs shadow-md">
           <div className="flex items-center justify-center gap-1.5">
-            <Flame className="w-4 h-4 text-black animate-pulse" />
-            <span>🔥 عرض خاص: قطعتين بـ 22 دينار + توصيل مجاني لباب البيت 👀</span>
-            <div className="flex gap-1 font-mono text-black bg-black/15 px-1.5 py-0.5 rounded text-[10px] font-black mr-1">
+            <Flame className="w-4 h-4 text-white animate-pulse" />
+            <span>🔥 عرض حرق الأسعار لفترة محدودة جداً + توصيل مجاني لباب البيت 👀</span>
+            <div className="flex gap-1 font-mono text-white bg-black/30 px-1.5 py-0.5 rounded text-[10px] font-black mr-1">
               <span>{String(timeLeft.minutes).padStart(2, '0')}</span>
               <span className="animate-pulse">:</span>
               <span>{String(timeLeft.seconds).padStart(2, '0')}</span>
@@ -221,19 +300,196 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
           </div>
         </header>
 
-        {/* 2. Premium Brand Header */}
-        <div className="bg-[#111111] relative pt-8 pb-6 text-center text-white border-b border-white/5 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#9d6b7c]/15 to-transparent pointer-events-none"></div>
-          <div className="relative z-10">
-            <div className="inline-block px-4 py-1 border border-[#d4af37] text-[#d4af37] text-[10px] tracking-[0.2em] uppercase mb-4 rounded-sm font-semibold">
-              Luxury Collection
+        {/* 2. Premium Brand Header with Horizontal Logo */}
+        <div className="bg-[#111111] relative pt-6 pb-4 text-center text-white border-b border-white/5 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#875667]/15 to-transparent pointer-events-none"></div>
+          <div className="relative z-10 flex flex-col items-center">
+            {/* Horizontal Brand Logo */}
+            <div className="mb-3">
+              <img 
+                src="/logo-horizontal.png" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallbackLabel = document.getElementById('brand-fallback-label');
+                  if (fallbackLabel) fallbackLabel.style.display = 'block';
+                }}
+                className="max-h-12 mx-auto object-contain px-4" 
+                alt="حكاية خيط للعبايات"
+              />
+              <div id="brand-fallback-label" style={{ display: 'none' }} className="inline-block px-4 py-1 border border-[#849a71] text-[#849a71] text-[10px] tracking-[0.2em] uppercase rounded-sm font-semibold">
+                HEKAYA KHAIT
+              </div>
             </div>
-            <h1 className="text-2xl font-serif leading-[1.2] text-white font-black px-4">
-              عباية الستراس <span className="text-[#9d6b7c] italic font-normal text-xl block mt-1">الفخامة الملكية</span>
+            
+            <h1 className="text-xl font-extrabold px-4 tracking-tight leading-normal text-white">
+              عباية الستراس <span className="text-[#875667] italic font-normal text-base block mt-0.5">حكاية خيط للأناقة الفاخرة</span>
             </h1>
-            <p className="text-xs text-neutral-400 mt-2 max-w-[85%] mx-auto leading-relaxed">
-              خامة كريب تركي ناعمة ومريحة جداً تناسب حركتك اليومية وتمنحك الأناقة الكاملة بـ 7 ألوان ساحرة طبق الأصل من الطبيعة.
+            <p className="text-[11px] text-neutral-400 mt-1 max-w-[85%] mx-auto leading-relaxed">
+              خامة كريب تركي ناعمة ومريحة جداً تناسب حركتك اليومية وتمنحك الأناقة الكاملة بـ 7 ألوان ساحرة.
             </p>
+          </div>
+        </div>
+
+        {/* 2.5 Hero Image / Banner Showcase */}
+        <div className="p-4 bg-[#111111] border-b border-white/5">
+          <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl aspect-[16/9] bg-neutral-900">
+            <img 
+              src="/color-c1.webp" 
+              onError={(e) => {
+                e.currentTarget.src = "/IMG_6453.webp";
+              }}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" 
+              alt="عباية الستراس الفاخرة - البنر الإعلاني"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-4">
+              <span className="bg-[#875667] text-white text-[9px] font-extrabold px-2.5 py-1 rounded-md w-fit mb-1 shadow-md">
+                ✨ عرض حرق الأسعار - الأكثر مبيعاً
+              </span>
+              <h2 className="text-sm font-extrabold text-[#849a71] leading-snug drop-shadow-md">
+                تصميم ملكي فاخر يمنحك التميز والأناقة الكاملة
+              </h2>
+              <p className="text-[10px] text-neutral-300 mt-0.5 leading-relaxed drop-shadow">
+                تفصيل انسيابي رائع بنسيج كريب تركي عالي الجودة ناعم وخفيف ومريح لكل يوم!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 2.6 Track My Order lookup section */}
+        <div className="p-4 bg-[#111111] border-b border-white/5" id="order-tracking-section">
+          <div className="bg-[#161616] rounded-2xl p-4 md:p-5 border border-white/5 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 bg-[#875667]/10 text-[#875667] text-[9px] font-black py-1 px-3.5 rounded-br-xl uppercase tracking-wider">
+              خدمة العملاء 📦
+            </div>
+            
+            <h3 className="text-xs font-black text-white mb-2 flex items-center gap-1.5 pt-1">
+              <Package className="w-4 h-4 text-[#849a71]" />
+              <span>تتبّع حالة طلبكِ مباشرة:</span>
+            </h3>
+            
+            <p className="text-[10px] text-neutral-400 mb-3 leading-relaxed">
+              أدخلي رقم الطلب الخاص بكِ (مثال: ORD-1234) أو رقم هاتف المستلم لمشاهدة حالة الشحن الفورية للعباية دون الحاجة لتسجيل دخول.
+            </p>
+
+            <form onSubmit={handleTrackOrder} className="flex gap-2">
+              <div className="relative flex-grow">
+                <Search className="absolute right-3 top-2.5 w-4 h-4 text-neutral-400" />
+                <input
+                  type="text"
+                  placeholder="رقم الطلب (ORD-xxxx) أو رقم الهاتف..."
+                  value={trackingInput}
+                  onChange={(e) => setTrackingInput(e.target.value)}
+                  className="w-full bg-[#111111] border border-neutral-800 focus:border-[#875667] focus:outline-none rounded-xl py-2 pr-9 pl-3 text-xs font-bold text-white placeholder-neutral-500 text-right"
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-[#875667] hover:bg-[#724454] text-white px-4 py-2 rounded-xl text-xs font-bold shrink-0 shadow-lg cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <span>تتبع</span>
+              </button>
+            </form>
+
+            {/* Error Message */}
+            {hasSearched && trackingError && (
+              <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-[10px] flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>{trackingError}</span>
+              </div>
+            )}
+
+            {/* Results Display */}
+            {hasSearched && trackingResults.length > 0 && (
+              <div className="mt-4 p-3.5 bg-[#111111] border border-[#849a71]/20 rounded-xl relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasSearched(false);
+                    setTrackingResults([]);
+                    setTrackingInput('');
+                  }}
+                  className="absolute top-2.5 left-2.5 text-neutral-500 hover:text-white p-1 rounded-full bg-[#161616] border border-neutral-800 cursor-pointer"
+                  title="إغلاق التتبع"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+
+                <h4 className="text-[11px] font-extrabold text-emerald-400 mb-3 flex items-center gap-1 text-right">
+                  <span>تم العثور على ({trackingResults.length}) طلب:</span>
+                </h4>
+
+                <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                  {trackingResults.map((order) => {
+                    const statusText = 
+                      order.status === 'pending' ? 'قيد الانتظار والمعاينة' :
+                      order.status === 'confirmed' ? 'تم تأكيد الطلب والتجهيز' :
+                      order.status === 'shipped' ? 'جاري التوصيل مع المندوب' :
+                      'تم إلغاء الطلب';
+                    
+                    const statusDesc = 
+                      order.status === 'pending' ? 'طلبكِ قيد المراجعة والتحضير، سيتصل بكِ فريق العمل قريباً لتأكيد المقاس والتوصيل.' :
+                      order.status === 'confirmed' ? 'تم تأكيد طلبكِ بنجاح! نقوم الآن بتجهيز وتغليف عبايتكِ بعناية تامة في مستودعاتنا.' :
+                      order.status === 'shipped' ? 'تم تسليم الطلب لشركة الشحن، المندوب في طريقه إليكِ وسيتصل بكِ خلال ساعات.' :
+                      'تم إلغاء هذا الطلب. يرجى التواصل معنا إذا كان هناك أي استفسار.';
+
+                    const statusColor = 
+                      order.status === 'pending' ? 'text-amber-400' :
+                      order.status === 'confirmed' ? 'text-blue-400' :
+                      order.status === 'shipped' ? 'text-emerald-400' :
+                      'text-red-400';
+
+                    const statusBg = 
+                      order.status === 'pending' ? 'bg-amber-500/10 border-amber-500/20' :
+                      order.status === 'confirmed' ? 'bg-blue-500/10 border-blue-500/20' :
+                      order.status === 'shipped' ? 'bg-emerald-500/10 border-emerald-500/20' :
+                      'bg-red-500/10 border-red-500/20';
+
+                    // Parse order date safely
+                    let dateStr = '';
+                    try {
+                      dateStr = new Date(order.date).toLocaleDateString('ar-JO', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      });
+                    } catch (e) {
+                      dateStr = order.date;
+                    }
+
+                    return (
+                      <div key={order.id} className="p-3 bg-[#161616] rounded-xl border border-white/5 text-[11px] space-y-2.5 text-right">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                          <span className="font-mono font-black text-neutral-300 text-xs">{order.id}</span>
+                          <span className="text-[10px] text-neutral-400">{dateStr}</span>
+                        </div>
+
+                        {/* Order info details */}
+                        <div className="grid grid-cols-2 gap-y-1.5 text-[10px] text-neutral-300 pb-1 border-b border-white/5 text-right">
+                          <div><span className="text-neutral-500">اسم المستلم:</span> <span className="font-extrabold">{order.name}</span></div>
+                          <div><span className="text-neutral-500">العرض:</span> <span className="text-[#849a71] font-bold">{order.offer}</span></div>
+                          <div><span className="text-neutral-500">اللون:</span> <span className="font-bold">{order.color}</span></div>
+                          <div><span className="text-neutral-500">الطول (سم):</span> <span className="font-mono font-bold">{order.height}</span></div>
+                          <div className="col-span-2"><span className="text-neutral-500">العنوان:</span> <span>{order.address}</span></div>
+                          <div className="col-span-2"><span className="text-neutral-500">قيمة الفاتورة:</span> <span className="text-emerald-400 font-extrabold text-xs">{order.totalPrice} دينار أردني</span></div>
+                        </div>
+
+                        {/* Progress Status Timeline */}
+                        <div className={`p-2.5 rounded-lg border ${statusBg}`}>
+                          <div className="flex items-center gap-1.5 justify-start">
+                            <span className="relative flex h-2 w-2">
+                              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${order.status === 'shipped' ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                              <span className={`relative inline-flex rounded-full h-2 w-2 ${order.status === 'shipped' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                            </span>
+                            <span className={`font-extrabold ${statusColor}`}>حالة الطلب: {statusText}</span>
+                          </div>
+                          <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">{statusDesc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -250,141 +506,189 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
             />
 
             {/* Shimmering Dust animation */}
-            <div className="absolute top-2 right-2 flex gap-1 text-[10px] text-amber-400 font-bold bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-amber-500/20">
-              <Sparkles className="w-3 h-3 text-amber-400" />
+            <div className="absolute top-2 right-2 flex gap-1 text-[10px] text-[#849a71] font-bold bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-[#849a71]/20">
+              <Sparkles className="w-3 h-3 text-[#849a71]" />
               <span>معاينة حية للون</span>
             </div>
 
-            {/* Vector Illustration of the Luxury Abaya - interactive color change! */}
-            <div className="w-48 h-64 relative z-10 flex items-center justify-center transition-transform duration-500 hover:scale-105">
-              <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]">
-                {/* Abaya Shadow */}
-                <ellipse cx="50" cy="115" rx="30" ry="4" fill="rgba(0,0,0,0.4)" />
-                
-                {/* Abaya Body (Changes Fill color based on selectedColor) */}
-                <path 
-                  d="M 50,12 L 20,110 L 80,110 Z" 
-                  fill={selectedColor.hex} 
-                  className="transition-all duration-500"
-                  stroke="#222222"
-                  strokeWidth="0.5"
-                />
-                
-                {/* Elegant sleeves */}
-                <path 
-                  d="M 50,15 L 12,50 L 22,110 L 50,110 Z" 
-                  fill={selectedColor.hex} 
-                  opacity="0.95" 
-                  className="transition-all duration-500"
-                />
-                <path 
-                  d="M 50,15 L 88,50 L 78,110 L 50,110 Z" 
-                  fill={selectedColor.hex} 
-                  opacity="0.95" 
-                  className="transition-all duration-500"
-                />
-
-                {/* Sleeve Gold Trim (Strass) */}
-                <path d="M 12,50 L 17,55" stroke="#d4af37" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
-                <path d="M 88,50 L 83,55" stroke="#d4af37" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
-
-                {/* Neck scarf / Hijab Overlay matching or contrasting */}
-                <path 
-                  d="M 38,12 C 38,0 62,0 62,12 C 62,18 38,18 38,12 Z" 
-                  fill="#111111" 
-                  stroke="#d4af37" 
-                  strokeWidth="0.5"
-                />
-                
-                {/* Golden strass sparkling down the center seam */}
-                <line x1="50" y1="18" x2="50" y2="110" stroke="#d4af37" strokeWidth="1.5" strokeDasharray="1,4" strokeLinecap="round" className="animate-pulse" />
-                
-                {/* Elegant collar overlay */}
-                <path 
-                  d="M 38,12 L 50,45 L 62,12" 
-                  fill="none" 
-                  stroke="#d4af37" 
-                  strokeWidth="1" 
-                  opacity="0.8"
-                />
-
-                {/* Additional crystal details on the chest */}
-                <circle cx="45" cy="30" r="1" fill="#fff" className="animate-ping" style={{ animationDuration: '2s' }} />
-                <circle cx="55" cy="35" r="1.2" fill="#d4af37" className="animate-ping" style={{ animationDuration: '2.5s' }} />
-                <circle cx="48" cy="45" r="0.8" fill="#fff" className="animate-ping" style={{ animationDuration: '1.8s' }} />
-                <circle cx="52" cy="55" r="1.1" fill="#d4af37" className="animate-ping" style={{ animationDuration: '2.2s' }} />
-              </svg>
+            {/* Real Model Photo - changes dynamically based on selectedColor */}
+            <div className="w-full max-w-[280px] aspect-[3/4] relative z-10 rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_45px_rgba(0,0,0,0.8)] bg-neutral-900 group">
+              <img 
+                key={selectedColor.id} // Forces React to recreate the element for clean transition animation
+                src={selectedColor.image} 
+                onError={(e) => {
+                  e.currentTarget.src = "/IMG_6453.webp";
+                }}
+                className="w-full h-full object-cover transition-all duration-700 scale-100 hover:scale-105" 
+                alt={`عباية الستراس الفاخرة باللون ${selectedColor.name}`}
+              />
+              
+              {/* Premium Luxury Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 pointer-events-none text-right">
+                <span className="text-[9px] text-neutral-300 font-bold tracking-wider mb-0.5">تصوير حقيقي ومباشر 📸</span>
+                <span className="text-xs font-black text-[#849a71]">{selectedColor.name}</span>
+              </div>
             </div>
 
             {/* Live Color Label */}
             <div className="mt-3 text-center z-10">
               <span className="text-white text-sm font-semibold block">{selectedColor.name}</span>
-              <span className="text-[11px] text-[#d4af37] font-mono mt-0.5 inline-block bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+              <span className="text-[11px] text-[#849a71] font-mono mt-0.5 inline-block bg-[#849a71]/10 px-2 py-0.5 rounded border border-[#849a71]/20">
                 كود القماش التركي: {selectedColor.code}
               </span>
             </div>
 
             {/* Quick interactive color switcher circles right on the product viewer */}
-            <div className="flex flex-wrap justify-center gap-2 mt-4 z-10 max-w-[85%]">
-              {COLORS.map((col) => (
-                <button
-                  key={col.id}
-                  onClick={() => setSelectedColor(col)}
-                  className={`w-7 h-7 rounded-full border-2 transition-all duration-300 relative flex items-center justify-center ${
-                    selectedColor.id === col.id ? 'border-[#d4af37] scale-115 shadow-md shadow-black/50' : 'border-neutral-700 hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: col.hex }}
-                  title={col.name}
-                  id={`color-picker-${col.id}`}
-                >
-                  {selectedColor.id === col.id && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />
-                  )}
-                </button>
-              ))}
+            <div className="flex flex-wrap justify-center gap-2.5 mt-4 z-10 max-w-[90%]">
+              {COLORS.map((col) => {
+                const isDarkColor = col.id === 'black' || col.id === 'charcoal' || col.id === 'green' || col.id === 'burgundy';
+                const textClass = isDarkColor ? 'text-white/90' : 'text-neutral-900/90';
+                return (
+                  <button
+                    key={col.id}
+                    onClick={() => setSelectedColor(col)}
+                    className={`w-9 h-9 rounded-full border-2 transition-all duration-300 relative flex flex-col items-center justify-center shadow-lg cursor-pointer ${
+                      selectedColor.id === col.id 
+                        ? 'border-emerald-500 scale-110 ring-2 ring-emerald-500/20' 
+                        : 'border-neutral-700/60 hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: col.hex }}
+                    title={col.name}
+                    id={`color-picker-${col.id}`}
+                  >
+                    <span className={`text-[10px] font-black tracking-tight ${textClass}`}>
+                      {col.code}
+                    </span>
+                    {selectedColor.id === col.id && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
           </div>
           <p className="text-[11px] text-neutral-400 text-center mt-2.5">
             💡 اضغطي على الدوائر الملونة لرؤية العباية على الطبيعة بلونها المفضل!
           </p>
+
+          {/* Premium Delivery & Inspection Trust Policy */}
+          <div className="mt-5 p-4 bg-[#161616] border border-[#849a71]/30 rounded-2xl text-right relative overflow-hidden shadow-lg" id="delivery-inspection-policy-box">
+            <div className="absolute top-0 left-0 bg-[#849a71]/20 text-[#849a71] text-[9px] font-black py-1 px-3.5 rounded-br-xl uppercase tracking-wider">
+              سياسة الفحص الآمن 🛡️
+            </div>
+            <h4 className="text-xs font-black text-[#849a71] mb-3 flex items-center gap-1.5 pt-1">
+              <span>شروط الفحص والتوصيل لمشترياتكِ:</span>
+            </h4>
+            <ul className="space-y-2.5 text-[11px] leading-relaxed text-neutral-300">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>
+                <span>المنتج سيكون بحوزتكِ بالكامل، مع الحق المطلق في فتح الطرد ومعاينته بالكامل قبل الدفع.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>
+                <span>لكِ الحق في فتح الطرد والتحقق من جودة الكريب والستراس دون قياس مسبق في الموقع.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>
+                <span>تركيزنا التام هو على استلامكِ للطلب برضا كامل، وفي حال وجود أي تفاوت بالقياس فإن <strong>الاستبدال مجاني بالكامل والشحن مجاني بالكامل على حسابنا</strong>.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>
+                <span>يرجى العلم بأن الفحص البصري للمنتج مشمول ومتاح، بينما لا تشمل الخدمة التجربة الفعلية (الارتداء والبروفة في الموقع).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>
+                <span>سيتم تسليم الطلب وتوصيله إليكِ بالكامل خلال يومين إلى ثلاثة أيام، وسيقوم المندوب بالتواصل معكِ مسبقاً لتنسيق الموعد.</span>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        {/* 4. Irresistible Offer Box */}
+        {/* 4. Irresistible Offer Box (Upsell Showcase) */}
         <div className="px-4 py-5 bg-[#111111]">
-          <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-5 text-center relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#1d1d1d] to-[#121212] border border-white/10 rounded-2xl p-5 text-center relative overflow-hidden shadow-xl">
             <div className="absolute top-0 right-0 bg-[#9d6b7c] text-white text-[10px] font-bold py-1 px-4 rounded-bl-xl shadow-md">
-              وفر 21% اليوم!
+              خصم خاص اليوم!
             </div>
             
             <p className="text-xs uppercase font-bold text-gray-400 mb-1">الحل الذكي والأوفر لكِ اليوم:</p>
-            <h3 className="text-2xl font-serif text-[#d4af37] flex items-center justify-center gap-2 flex-wrap">
-              <span>قطعتين فقط بـ 22 دينار</span>
-              <span className="text-xs text-gray-500 font-normal line-through">بدل 28 دينار</span>
-            </h3>
+            
+            {/* Visual Grid Comparison */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {/* Option 1: One Piece */}
+              <div className="bg-[#1a1a1a] border border-white/5 p-3 rounded-xl flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] text-neutral-400 block font-bold mb-1">الخيار الفردي</span>
+                  <h4 className="text-xs font-black text-white leading-tight">قطعة واحدة فقط</h4>
+                </div>
+                <div className="mt-3">
+                  <span className="text-base font-black text-neutral-300 font-mono">14 دينار</span>
+                  <p className="text-[9px] text-neutral-500 block mt-0.5">سعر القطعة: 14 د.أ</p>
+                </div>
+              </div>
+
+              {/* Option 2: Two Pieces (Upsell Winner) */}
+              <div className="bg-[#875667]/15 border-2 border-[#875667] p-3 rounded-xl flex flex-col justify-between relative shadow-inner">
+                <span className="absolute -top-2.5 inset-x-0 mx-auto w-fit bg-[#4c6442] text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shadow">
+                  أوفر بـ 6 دنانير! 🎁
+                </span>
+                <div className="pt-1.5">
+                  <span className="text-[10px] text-[#875667] block font-extrabold mb-1">العرض الأكثر مبيعاً 🔥</span>
+                  <h4 className="text-xs font-black text-white leading-tight">قطعتين كاملتين</h4>
+                </div>
+                <div className="mt-3">
+                  <span className="text-base font-black text-[#849a71] font-mono">22 دينار</span>
+                  <p className="text-[9px] text-emerald-400 font-extrabold block mt-0.5">بدل <span className="line-through text-neutral-500">28 د.أ</span></p>
+                </div>
+              </div>
+            </div>
             
             {/* Quick value badges */}
-            <div className="flex flex-wrap justify-center gap-1.5 mt-3">
-              <span className="bg-emerald-500/10 text-emerald-400 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                توصيل مجاني لجميع مناطق الأردن
-              </span>
-              <span className="bg-[#9d6b7c]/20 text-[#9d6b7c] text-[10px] font-bold px-3 py-1 rounded-full border border-[#9d6b7c]/30">
-                🔥 العرض الأوفر والأكثر طلباً
+            <div className="flex flex-wrap justify-center gap-1.5 mt-4">
+              <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                توصيل مجاني لجميع مناطق الأردن لباب البيت
               </span>
             </div>
 
-            <div className="mt-4 bg-[#1a1a1a] rounded-xl p-3 border border-white/5 max-w-[95%] mx-auto shadow-sm">
-              <p className="text-xs text-amber-400 font-bold flex items-center justify-center gap-1">
-                <span>💡 نصيحة: اطلبي قطعتين لتغيير إطلالتك وتوفير 6 دنانير كاملة!</span>
+            <div className="mt-3.5 bg-neutral-900 rounded-xl p-2.5 border border-white/5 max-w-[95%] mx-auto">
+              <p className="text-[11px] text-[#849a71] font-bold flex items-center justify-center gap-1">
+                <span>💡 نصيحة حكاية خيط: اطلبي قطعتين (مثال: الأسود الملكي + الوردي العتيق) لتوفير 6 دنانير والحصول على إطلالة بديلة ساحرة!</span>
               </p>
             </div>
           </div>
         </div>
 
-        {/* 5. Trust / Conversion Features (Icons & Clear Text) */}
+        {/* 5. Trust / Conversion Features (Icons & Clear Text) with Circular Stamp */}
         <div className="bg-[#111111] border-y border-white/5 p-5">
-          <h3 className="text-center font-bold text-xs uppercase tracking-widest text-[#9d6b7c] mb-4">لماذا يفضل الأردنيون الشراء منا؟</h3>
+          {/* Circular Guarantee Stamp Card */}
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#131313] border border-[#849a71]/30 rounded-2xl p-4 flex items-center gap-4 shadow-xl mb-6">
+            <div className="relative shrink-0">
+              <img 
+                src="/logo-circular.png" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallbackSeal = document.getElementById('seal-fallback-badge');
+                  if (fallbackSeal) fallbackSeal.style.display = 'flex';
+                }}
+                className="w-16 h-16 object-contain" 
+                alt="ختم الثقة حكاية خيط"
+              />
+              <div id="seal-fallback-badge" style={{ display: 'none' }} className="w-16 h-16 rounded-full bg-[#849a71]/10 border border-[#849a71]/30 items-center justify-center text-[#849a71] font-bold text-center text-xs flex-col">
+                <span className="text-sm">✓</span>
+                <span className="text-[8px]">ضمان</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <h4 className="text-xs font-black text-[#849a71] tracking-wider uppercase">ضمان الفحص قبل الاستلام والدفع</h4>
+              <p className="text-[11px] text-neutral-300 mt-1 leading-relaxed">
+                المعاينة متاحة بالكامل قبل الاستلام والدفع. افحصي جودة قماش الكريب التركي وخياطة الستراس اللامعة بنفسك قبل الدفع!
+              </p>
+            </div>
+          </div>
+
+          <h3 className="text-center font-bold text-xs uppercase tracking-widest text-[#875667] mb-4">لماذا يفضل الأردنيون الشراء منا؟</h3>
           <div className="space-y-4">
             
             <div className="flex items-start gap-3 bg-[#161616] p-4 rounded-xl shadow-sm border border-white/5">
@@ -398,7 +702,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
             </div>
 
             <div className="flex items-start gap-3 bg-[#161616] p-4 rounded-xl shadow-sm border border-white/5">
-              <div className="w-9 h-9 bg-amber-500/10 rounded-full flex items-center justify-center text-[#d4af37] shrink-0">
+              <div className="w-9 h-9 bg-amber-500/10 rounded-full flex items-center justify-center text-[#849a71] shrink-0">
                 <Ruler className="w-5 h-5" />
               </div>
               <div>
@@ -408,7 +712,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
             </div>
 
             <div className="flex items-start gap-3 bg-[#161616] p-4 rounded-xl shadow-sm border border-white/5">
-              <div className="w-9 h-9 bg-[#9d6b7c]/15 rounded-full flex items-center justify-center text-[#9d6b7c] shrink-0">
+              <div className="w-9 h-9 bg-[#875667]/15 rounded-full flex items-center justify-center text-[#875667] shrink-0">
                 <Heart className="w-5 h-5" />
               </div>
               <div>
@@ -423,7 +727,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
         {/* 6. Color Visual Banner */}
         <div className="p-4 bg-[#111111]">
           <div className="bg-[#161616] rounded-2xl p-4 text-white text-center shadow-lg border border-white/5">
-            <h4 className="font-bold text-xs uppercase tracking-widest text-[#d4af37] mb-1">مجموعة الألوان المتوفرة</h4>
+            <h4 className="font-bold text-xs uppercase tracking-widest text-[#849a71] mb-1">مجموعة الألوان المتوفرة</h4>
             <p className="text-[11px] text-neutral-400">تطريز الستراس الفاخر اللامع على سبعة ألوان ساحرة مستوحاة من الطبيعة</p>
             
             {/* Color Swatch grid */}
@@ -435,7 +739,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                     setSelectedColor(col);
                   }}
                   className={`p-2 rounded-xl border flex flex-col items-center cursor-pointer transition-all ${
-                    selectedColor.id === col.id ? 'bg-[#9d6b7c]/20 border-[#9d6b7c]' : 'bg-neutral-900 border-neutral-800 hover:bg-neutral-800'
+                    selectedColor.id === col.id ? 'bg-[#875667]/20 border-[#875667]' : 'bg-neutral-900 border-neutral-800 hover:bg-neutral-800'
                   }`}
                 >
                   <div 
@@ -443,9 +747,79 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                     style={{ backgroundColor: col.hex }}
                   />
                   <span className="text-[10px] font-bold mt-1.5 truncate w-full text-center text-white">{col.name.split(' ')[0]}</span>
-                  <span className="text-[8px] text-[#d4af37] font-mono font-bold">{col.code}</span>
+                  <span className="text-[8px] text-[#849a71] font-mono font-bold">{col.code}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 6.5. Color Catalog & Texture Section */}
+        <div className="p-4 bg-[#111111] border-b border-white/5">
+          <div className="bg-[#161616] rounded-2xl p-5 shadow-lg border border-white/5">
+            <div className="text-center mb-5">
+              <span className="bg-[#875667]/15 text-[#875667] text-[10px] font-bold px-3 py-1 rounded-full border border-[#875667]/20 inline-block">
+                📸 المعرض الحقيقي للألوان السبعة الفاخرة للعباية
+              </span>
+              <h3 className="text-sm font-extrabold text-white mt-2">اضغطي على أي لون لتغيير صورة الموديل وتحديده فوراً</h3>
+              <p className="text-[10px] text-neutral-400 mt-1">
+                الصور الحقيقية للعباية من الواقع لضمان الشفافية والأمانة الكاملة في تفصيل طلبكِ.
+              </p>
+            </div>
+
+            {/* Grid of the 7 original colors */}
+            <div className="grid grid-cols-2 xs:grid-cols-3 gap-3">
+              {COLORS.map((col) => {
+                const isSelected = selectedColor.id === col.id;
+                return (
+                  <button
+                    key={col.id}
+                    type="button"
+                    onClick={() => setSelectedColor(col)}
+                    className={`relative rounded-xl overflow-hidden border transition-all duration-300 text-right group flex flex-col ${
+                      isSelected 
+                        ? 'border-[#849a71] ring-2 ring-[#849a71]/50 scale-102 bg-[#849a71]/5' 
+                        : 'border-white/5 bg-neutral-900/40 hover:border-white/20'
+                    }`}
+                  >
+                    {/* The model image representing this color */}
+                    <div className="aspect-[3/4] w-full overflow-hidden relative bg-black">
+                      <img 
+                        src={col.image}
+                        onError={(e) => {
+                          e.currentTarget.src = "/IMG_6453.webp";
+                        }}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                        alt={col.name}
+                      />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="bg-[#849a71] text-white text-[9px] font-bold px-2 py-1 rounded-md shadow-md">
+                            ✓ تم الاختيار
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Color Label */}
+                    <div className="p-2 flex flex-col justify-between flex-1 bg-neutral-950/60">
+                      <span className="text-[10px] font-extrabold text-white truncate block">{col.name.split(' ')[0]}</span>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[9px] text-neutral-400 font-mono">{col.code}</span>
+                        <span 
+                          className="w-2.5 h-2.5 rounded-full border border-white/20" 
+                          style={{ backgroundColor: col.hex }}
+                        />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 text-center bg-[#849a71]/5 border border-[#849a71]/10 p-2.5 rounded-xl">
+              <p className="text-[10px] text-[#849a71] font-bold leading-relaxed">
+                ✨ جميع هذه الصور حقيقية ومصورة للعباية من الواقع لضمان مطابقة تفصيل خامة الكريب المنسدل وتطريز الستراس 100%.
+              </p>
             </div>
           </div>
         </div>
@@ -453,10 +827,10 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
         {/* 7. Client Reviews / Testimonials Section */}
         <div className="p-5 bg-[#111111] border-t border-white/5">
           <div className="text-center mb-6">
-            <span className="bg-[#9d6b7c]/15 text-[#9d6b7c] text-[10px] font-bold px-3 py-1 rounded-full border border-[#9d6b7c]/20 inline-block">
-              👑 آراء وتجارب الملكات الحقيقية
+            <span className="bg-[#875667]/15 text-[#875667] text-[10px] font-bold px-3 py-1 rounded-full border border-[#875667]/20 inline-block">
+              👑 آراء وتجارب عميلاتنا الحقيقية
             </span>
-            <h3 className="text-lg font-black text-white mt-2">ماذا تقول الملكات اللواتي جربن عبايتنا؟</h3>
+            <h3 className="text-lg font-black text-white mt-2">ماذا تقول العميلات اللواتي جربن عبايتنا؟</h3>
             <p className="text-[11px] text-neutral-400 mt-1 max-w-[90%] mx-auto">
               تجارب حية وموثقة لعميلاتنا في الأردن مع خامة الكريب التركي والتفصيل الملكي المميز
             </p>
@@ -531,7 +905,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                   }}
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap border shrink-0 transition-all cursor-pointer ${
                     activeTestimonialTag === tag
-                      ? 'bg-[#d4af37]/10 border-[#d4af37] text-[#d4af37] shadow-sm shadow-[#d4af37]/5'
+                      ? 'bg-[#849a71]/10 border-[#849a71] text-[#849a71] shadow-sm shadow-[#849a71]/5'
                       : 'bg-[#161616] border-white/5 text-neutral-400 hover:text-white hover:border-white/10'
                   }`}
                 >
@@ -557,7 +931,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                   {/* Testimonial Active Card */}
                   <div className="bg-[#161616] p-5 rounded-2xl border border-white/5 relative overflow-hidden shadow-xl min-h-[220px] flex flex-col justify-between">
                     {/* Golden Watermark Quote icon */}
-                    <Quote className="absolute top-4 left-4 w-12 h-12 text-[#d4af37]/5 pointer-events-none rotate-180 transform" />
+                    <Quote className="absolute top-4 left-4 w-12 h-12 text-[#849a71]/5 pointer-events-none rotate-180 transform" />
                     
                     <div>
                       {/* Card Header Info */}
@@ -615,7 +989,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                             type="button"
                             onClick={() => setTestimonialIndex(idx)}
                             className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                              currentIndexSafe === idx ? 'bg-[#d4af37] w-4' : 'bg-neutral-700 hover:bg-neutral-500'
+                              currentIndexSafe === idx ? 'bg-[#849a71] w-4' : 'bg-neutral-700 hover:bg-neutral-500'
                             }`}
                           />
                         ))}
@@ -662,7 +1036,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                               <Star key={i} className="w-3 h-3 fill-current" />
                             ))}
                           </div>
-                          <span className="text-[8px] text-[#9d6b7c] font-bold">
+                          <span className="text-[8px] text-[#875667] font-bold">
                             #{rev.tag}
                           </span>
                         </div>
@@ -679,8 +1053,8 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
           })()}
 
           {/* Social Proof conversion boost sub-banner */}
-          <div className="mt-4 bg-[#d4af37]/5 border border-[#d4af37]/10 rounded-xl p-3 text-center">
-            <span className="text-[10px] text-amber-300 font-extrabold block">
+          <div className="mt-4 bg-[#849a71]/5 border border-[#849a71]/10 rounded-xl p-3 text-center">
+            <span className="text-[10px] text-[#849a71] font-extrabold block">
               💡 هل تعلمين؟ 94% من العميلات يخترن "عرض قطعتين بـ 22 دينار" لتوفير 6 دنانير وإهداء قطعة للأخت أو الصديقة! 🎁
             </span>
           </div>
@@ -690,7 +1064,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
         <div className="p-4 bg-[#111111]">
           <div className="bg-[#161616] rounded-2xl p-4 text-white shadow-lg border border-white/5">
             <div className="text-center mb-3">
-              <span className="bg-[#d4af37]/10 text-[#d4af37] text-[10px] font-bold px-2.5 py-1 rounded-full border border-[#d4af37]/20 inline-block">
+              <span className="bg-[#849a71]/10 text-[#849a71] text-[10px] font-bold px-2.5 py-1 rounded-full border border-[#849a71]/20 inline-block">
                 ✨ فيديو توضيحي للعرض الفعلي
               </span>
               <h3 className="text-sm font-extrabold text-white mt-1.5">شاهدي العباية على الطبيعة قبل الطلب</h3>
@@ -701,20 +1075,21 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
             <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-inner bg-black flex flex-col justify-center items-center">
               <video 
                 className="w-full h-full object-cover"
-                controls
-                playsInline
-                loop
+                autoPlay
                 muted
+                loop
+                playsInline
+                controls
                 poster="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=800"
               >
-                {/* Placeholder URL - Can be customized by the merchant later */}
+                {/* User's uploaded Abaya video */}
+                <source src="/abaya-video.mp4" type="video/mp4" />
                 <source src="https://assets.mixkit.co/videos/preview/mixkit-elegant-woman-wearing-a-traditional-black-robe-with-gold-elements-43340-large.mp4" type="video/mp4" />
-                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
                 متصفحك لا يدعم تشغيل الفيديو.
               </video>
               
               {/* Fallback & Custom overlay description */}
-              <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[9px] text-amber-300 flex items-center justify-between border border-white/5">
+              <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[9px] text-[#849a71] flex items-center justify-between border border-white/5">
                 <span>📹 خامة كريب تركي أصلي 100%</span>
                 <span>تطريز يدوي ستراس لامع ✨</span>
               </div>
@@ -722,19 +1097,95 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
 
             <div className="mt-2 text-center">
               <span className="text-[10px] text-neutral-400">
-                💡 انقري على زر التشغيل لرؤية لمعة الستراس وانسيابية العباية أثناء الحركة
+                💡 الفيديو يعمل تلقائياً، يمكنكِ تشغيل الصوت أو إيقافه من أدوات التحكم.
               </span>
             </div>
           </div>
         </div>
 
+        {/* 7.8. Programmatic Sizing Guide Section */}
+        <div className="p-4 bg-[#111111]">
+          <div className="bg-[#161616] rounded-2xl p-5 border border-white/5 shadow-xl text-white">
+            <div className="text-center mb-4">
+              <span className="bg-[#875667]/15 text-[#875667] text-[10px] font-bold px-3 py-1 rounded-full border border-[#875667]/20 inline-block">
+                📐 دليل القياس الذكي لقصّة ملكيّة مريحة
+              </span>
+              <h3 className="text-sm font-extrabold text-white mt-2">اعرفي ملاءمتكِ المثالية بلمسة واحدة</h3>
+              <p className="text-[10px] text-neutral-400 mt-1">
+                تأكيدًا على جودة وملاءمة عباياتنا، قمنا ببرمجة هذا الدليل الذكي لمساعدتكِ في اختيار القياس المناسب بناءً على طولكِ ووزنكِ وتفادي أخطاء التفصيل.
+              </p>
+            </div>
+
+            {/* Interactive Calculator Block */}
+            <div className="bg-neutral-900/60 rounded-xl p-4 border border-white/5 space-y-4">
+              {/* Dynamic suggestion panel */}
+              <div className="bg-[#875667]/10 border border-[#875667]/30 rounded-xl p-3 text-center">
+                <span className="text-[10px] text-neutral-400 block font-medium">ملاءمة العباية المقترحة بناءً على طولكِ ووزنكِ:</span>
+                <span className="text-sm font-black text-[#849a71] block mt-1">
+                  طول منسدل أنيق ومناسب تماماً لقامة {height} سم
+                </span>
+                <span className="text-[11px] text-neutral-300 block mt-1 leading-relaxed">
+                  {weight <= 65 ? (
+                    <span>تناسب وزنكِ الحالي ({weight} كغم) بقصة قياسية مريحة وأنيقة (Regular Fit) ✨</span>
+                  ) : weight <= 85 ? (
+                    <span>تناسب وزنكِ الحالي ({weight} كغم) بقصة فضفاضة وانسيابية مريحة (Comfort Fit) 🌸</span>
+                  ) : (
+                    <span>قصّة ملكية مريحة جداً مصممة خصيصاً لاستيعاب وزنكِ الحالي لغاية 100 كيلو جرام لضمان الاحتشام الكامل والراحة (Extra Wide Royal Fit) 👑</span>
+                  )}
+                </span>
+              </div>
+
+              {/* Sliders to change height and weight */}
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between items-center text-xs text-neutral-300 mb-1">
+                    <span>الطول الحالي: <strong className="text-white font-mono">{height} سم</strong></span>
+                    <span className="text-[10px] text-[#849a71] font-bold">طول العباية الفعلي المقترح: {getRecommendedSize(height)} سم</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="130" 
+                    max="195" 
+                    value={height}
+                    onChange={(e) => {
+                      const h = Number(e.target.value);
+                      setHeight(h);
+                      setSelectedLength(getRecommendedSize(h));
+                    }}
+                    className="w-full accent-[#875667] bg-neutral-800 h-1.5 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center text-xs text-neutral-300 mb-1">
+                    <span>الوزن الحالي: <strong className="text-white font-mono">{weight} كغم</strong></span>
+                    <span className="text-[10px] text-emerald-400 font-bold">تستوعب لغاية 100 كغم 👍</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="40" 
+                    max="110" 
+                    value={weight}
+                    onChange={(e) => setWeight(Number(e.target.value))}
+                    className="w-full accent-[#875667] bg-neutral-800 h-1.5 rounded-lg cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 text-center text-[10px] text-amber-400/80 bg-amber-500/5 p-2 rounded-lg border border-amber-500/10">
+              📌 <strong>ملاحظة هامة جداً:</strong> عباياتنا مصممة خصيصاً لتمنحكِ الراحة التامة وحرية الحركة اليومية بفضل نسيج الكريب الملكي المنسدل بلطف، وهو آمن ومناسب لجميع الأجسام والأوزان لغاية 100 كيلو غرام بدون قلق. يتم تحديد الطول والعرض ليكون ساتراً وجميلاً لامتصاص أي تفاوت في قياسات الجسم.
+            </div>
+          </div>
+        </div>
+
         {/* 8. Super Secure Arabic Order Form */}
-        <div ref={formRef} className="bg-[#fdfafb] text-[#111111] rounded-t-[30px] p-6 mt-6 shadow-2xl relative border-t-4 border-[#9d6b7c]" id="order-form-container">
+        <div ref={formRef} className="bg-[#fdfafb] text-[#111111] rounded-t-[30px] p-6 mt-6 shadow-2xl relative border-t-4 border-[#875667]" id="order-form-container">
           <div className="text-center mb-5">
-            <span className="bg-[#9d6b7c]/15 text-[#9d6b7c] text-xs font-bold px-3 py-1 rounded-full border border-[#9d6b7c]/20 inline-block mb-2">
+            <span className="bg-[#875667]/15 text-[#875667] text-xs font-bold px-3 py-1 rounded-full border border-[#875667]/20 inline-block mb-2">
               🛒 الدفع نقداً عند استلام الطرد وتجربته
             </span>
-            <h2 className="text-xl font-bold text-[#9d6b7c]">تأكيد الطلب السريع</h2>
+            <h2 className="text-xl font-bold text-[#875667]">تأكيد الطلب السريع</h2>
             <p className="text-xs text-neutral-500 mt-1 max-w-[85%] mx-auto leading-relaxed">
               الرجاء تعبئة البيانات التالية بدقة، وسيتم التواصل معك هاتفياً لتأكيد المقاس واللون المفضل.
             </p>
@@ -758,7 +1209,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl py-3 pr-10 pl-3 text-sm text-neutral-900 focus:outline-none focus:border-[#9d6b7c] focus:ring-1 focus:ring-[#9d6b7c] transition-all"
+                  className="w-full bg-white border border-gray-200 rounded-xl py-3 pr-10 pl-3 text-sm text-neutral-900 focus:outline-none focus:border-[#875667] focus:ring-1 focus:ring-[#875667] transition-all"
                   placeholder="مثال: رانيا أحمد"
                   required
                   id="input-customer-name"
@@ -775,7 +1226,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl py-3 pr-10 pl-3 text-sm text-neutral-900 font-mono focus:outline-none focus:border-[#9d6b7c] focus:ring-1 focus:ring-[#9d6b7c] transition-all"
+                  className="w-full bg-white border border-gray-200 rounded-xl py-3 pr-10 pl-3 text-sm text-neutral-900 font-mono focus:outline-none focus:border-[#875667] focus:ring-1 focus:ring-[#875667] transition-all"
                   placeholder="07XXXXXXXX"
                   required
                   id="input-customer-phone"
@@ -794,7 +1245,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                     key={off.id}
                     className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
                       selectedOffer === off.title 
-                        ? 'bg-[#9d6b7c]/10 border-[#9d6b7c] text-neutral-900 shadow-sm' 
+                        ? 'bg-[#875667]/10 border-[#875667] text-neutral-900 shadow-sm' 
                         : 'bg-white border-gray-200 text-neutral-600 hover:bg-neutral-50'
                     }`}
                   >
@@ -805,7 +1256,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                         value={off.title}
                         checked={selectedOffer === off.title}
                         onChange={() => setSelectedOffer(off.title)}
-                        className="accent-[#9d6b7c] w-4 h-4 cursor-pointer"
+                        className="accent-[#875667] w-4 h-4 cursor-pointer"
                       />
                       <div className="text-right">
                         <span className="text-xs font-bold block text-neutral-800">{off.title.split(' (')[0]}</span>
@@ -813,7 +1264,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                       </div>
                     </div>
                     <div className="text-left shrink-0">
-                      <span className="text-sm font-extrabold text-[#9d6b7c]">{off.price} دينار</span>
+                      <span className="text-sm font-extrabold text-[#875667]">{off.price} دينار</span>
                       {off.oldPrice && (
                         <span className="text-[10px] text-gray-400 line-through block">{off.oldPrice} د.أ</span>
                       )}
@@ -834,7 +1285,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                     onClick={() => setSelectedColor(col)}
                     className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-all text-right ${
                       selectedColor.id === col.id 
-                        ? 'bg-[#9d6b7c]/10 border-[#9d6b7c] text-[#9d6b7c] font-bold' 
+                        ? 'bg-[#875667]/10 border-[#875667] text-[#875667] font-bold' 
                         : 'bg-white border-gray-200 text-neutral-600 hover:bg-neutral-50'
                     }`}
                     id={`btn-color-select-${col.id}`}
@@ -858,12 +1309,12 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
               <div>
                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
                   <Scale className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>الوزن التقريبي (كغم) *</span>
+                  <span>الوزن (كغم) *</span>
                 </label>
                 <div className="flex items-center gap-1.5 mt-1">
                   <button 
                     type="button"
-                    onClick={() => setWeight(prev => Math.max(40, prev - 2))}
+                    onClick={() => setWeight(prev => Math.max(30, prev - 2))}
                     className="w-8 h-8 bg-neutral-100 hover:bg-neutral-200 rounded-lg flex items-center justify-center font-bold text-sm text-neutral-700 cursor-pointer"
                   >
                     -
@@ -871,15 +1322,15 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                   <input 
                     type="number"
                     value={weight}
-                    onChange={(e) => setWeight(Math.min(110, Math.max(30, Number(e.target.value))))}
+                    onChange={(e) => setWeight(Math.min(100, Math.max(30, Number(e.target.value))))}
                     className="w-12 bg-neutral-50 border border-gray-200 text-center py-1 rounded-lg text-xs font-bold font-mono focus:outline-none"
                     min="30"
-                    max="110"
+                    max="100"
                     required
                   />
                   <button 
                     type="button"
-                    onClick={() => setWeight(prev => Math.min(110, prev + 2))}
+                    onClick={() => setWeight(prev => Math.min(100, prev + 2))}
                     className="w-8 h-8 bg-neutral-100 hover:bg-neutral-200 rounded-lg flex items-center justify-center font-bold text-sm text-neutral-700 cursor-pointer"
                   >
                     +
@@ -891,12 +1342,16 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
               <div>
                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
                   <Ruler className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>الطول التقريبي (سم) *</span>
+                  <span>الطول (سم) *</span>
                 </label>
                 <div className="flex items-center gap-1.5 mt-1">
                   <button 
                     type="button"
-                    onClick={() => setHeight(prev => Math.max(130, prev - 2))}
+                    onClick={() => {
+                      const newH = Math.max(120, height - 2);
+                      setHeight(newH);
+                      setSelectedLength(getRecommendedSize(newH));
+                    }}
                     className="w-8 h-8 bg-neutral-100 hover:bg-neutral-200 rounded-lg flex items-center justify-center font-bold text-sm text-neutral-700 cursor-pointer"
                   >
                     -
@@ -904,7 +1359,11 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                   <input 
                     type="number"
                     value={height}
-                    onChange={(e) => setHeight(Math.min(200, Math.max(120, Number(e.target.value))))}
+                    onChange={(e) => {
+                      const newH = Math.min(200, Math.max(120, Number(e.target.value)));
+                      setHeight(newH);
+                      setSelectedLength(getRecommendedSize(newH));
+                    }}
                     className="w-12 bg-neutral-50 border border-gray-200 text-center py-1 rounded-lg text-xs font-bold font-mono focus:outline-none"
                     min="120"
                     max="200"
@@ -912,7 +1371,11 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
                   />
                   <button 
                     type="button"
-                    onClick={() => setHeight(prev => Math.min(200, prev + 2))}
+                    onClick={() => {
+                      const newH = Math.min(200, height + 2);
+                      setHeight(newH);
+                      setSelectedLength(getRecommendedSize(newH));
+                    }}
                     className="w-8 h-8 bg-neutral-100 hover:bg-neutral-200 rounded-lg flex items-center justify-center font-bold text-sm text-neutral-700 cursor-pointer"
                   >
                     +
@@ -921,22 +1384,45 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
               </div>
             </div>
 
-            {/* Address */}
-            <div>
-              <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">المحافظة والعنوان بالتفصيل *</label>
-              <div className="relative">
-                <input 
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl py-3 pr-10 pl-3 text-sm text-neutral-900 focus:outline-none focus:border-[#9d6b7c] focus:ring-1 focus:ring-[#9d6b7c] transition-all"
-                  placeholder="مثال: عمان - مرج الحمام - قرب دوار الدلة"
-                  required
-                  id="input-customer-address"
-                />
-                <MapPin className="absolute top-3.5 right-3 w-4 h-4 text-neutral-400" />
+            {/* City Dropdown & Detailed Address */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">المدينة / المحافظة *</label>
+                <div className="relative">
+                  <select
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl py-3 pr-10 pl-3 text-sm text-neutral-900 focus:outline-none focus:border-[#875667] focus:ring-1 focus:ring-[#875667] transition-all cursor-pointer appearance-none"
+                    required
+                    id="input-customer-city"
+                  >
+                    {JORDAN_CITIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <MapPin className="absolute top-3.5 right-3 w-4 h-4 text-neutral-400 pointer-events-none" />
+                  <div className="absolute inset-y-0 left-4 flex items-center pl-2 pointer-events-none text-neutral-500 font-mono text-[9px]">
+                    ▼
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] text-neutral-400 mt-1">اسم المحافظة، الحي، اسم الشارع، وأي معلم بارز قريب لتسهيل وسرعة الشحن.</p>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">العنوان بالتفصيل (الحي، الشارع، معلم بارز) *</label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl py-3 pr-10 pl-3 text-sm text-neutral-900 focus:outline-none focus:border-[#875667] focus:ring-1 focus:ring-[#875667] transition-all"
+                    placeholder="مثال: مرج الحمام - قرب دوار الدلة - عمارة رقم 5"
+                    required
+                    id="input-customer-address"
+                  />
+                  <MapPin className="absolute top-3.5 right-3 w-4 h-4 text-neutral-400" />
+                </div>
+                <p className="text-[10px] text-neutral-400 mt-1">يرجى كتابة اسم الحي، اسم الشارع، وأي معلم بارز قريب لتسهيل وسرعة الشحن.</p>
+              </div>
             </div>
 
             {/* Payment Method Option - Cash on Delivery */}
@@ -969,20 +1455,33 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
             {/* Submit Button */}
             <button 
               type="submit" 
-              className="w-full bg-[#111111] hover:bg-black text-[#d4af37] font-extrabold text-base md:text-lg py-4 px-6 rounded-xl cursor-pointer shadow-lg transition-all flex items-center justify-center gap-2 mt-4"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base md:text-lg py-4 px-6 rounded-xl cursor-pointer shadow-lg transition-all flex items-center justify-center gap-2 mt-4"
               id="btn-order-submit"
             >
               <ShoppingBag className="w-5 h-5 shrink-0" />
-              <span>اضغطي هنا لتأكيد الطلب 🛒</span>
+              <span>اطلبي الآن 🛒</span>
             </button>
 
-            {/* Fallback trust indicators below form */}
-            <div className="flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-6 border-t border-gray-200 mt-6">
-              <div className="flex items-center space-x-reverse space-x-4">
-                <span>✓ فحص عند الاستلام</span>
-                <span>✓ جودة كريب تركي</span>
+            {/* Professional Trust Badges */}
+            <div className="grid grid-cols-3 gap-2.5 pt-6 border-t border-gray-200 mt-6 text-center">
+              <div className="flex flex-col items-center p-2.5 bg-neutral-50 rounded-xl border border-gray-100 shadow-sm">
+                <span className="text-xl">🔎</span>
+                <span className="text-[10px] font-extrabold text-neutral-800 mt-1">افحصي قبل الدفع</span>
+                <span className="text-[8px] text-neutral-400 mt-0.5">ضمان المعاينة الكاملة</span>
               </div>
-              <div className="text-[#9d6b7c]">LIMITED QUANTITY AVAILABLE</div>
+              <div className="flex flex-col items-center p-2.5 bg-neutral-50 rounded-xl border border-gray-100 shadow-sm">
+                <span className="text-xl">🚚</span>
+                <span className="text-[10px] font-extrabold text-neutral-800 mt-1">توصيل مجاني</span>
+                <span className="text-[8px] text-neutral-400 mt-0.5">لكافة محافظات الأردن</span>
+              </div>
+              <div className="flex flex-col items-center p-2.5 bg-neutral-50 rounded-xl border border-gray-100 shadow-sm">
+                <span className="text-xl">🔄</span>
+                <span className="text-[10px] font-extrabold text-neutral-800 mt-1">سهولة الاستبدال</span>
+                <span className="text-[8px] text-neutral-400 mt-0.5">خلال 3 أيام عمل</span>
+              </div>
+            </div>
+            <div className="text-center text-[9px] text-[#875667] font-bold tracking-wider mt-4">
+              ⚡ الكمية محدودة جداً - احصلي على العرض الأقوى اليوم ⚡
             </div>
 
           </form>
@@ -990,7 +1489,7 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
 
         {/* 9. Footer Terms */}
         <footer className="bg-[#111111] text-neutral-400 py-6 text-center px-4 text-[10px] border-t border-white/5">
-          <p>© {new Date().getFullYear()} دار الملكة للعبايات الفاخرة. جميع الحقوق محفوظة.</p>
+          <p>© {new Date().getFullYear()} حكاية خيط للعبايات الفاخرة. جميع الحقوق محفوظة.</p>
           <p className="mt-1 text-neutral-500">هذه الصفحة مشفرة وآمنة لتلقي طلبات المبيعات بكفاءة وسرعة فائقة.</p>
         </footer>
 
@@ -1001,10 +1500,10 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard }: LandingP
         <a 
           href="#order-form-container" 
           onClick={scrollToForm}
-          className="w-full max-w-[450px] bg-[#d4af37] text-black text-center font-extrabold py-3 px-4 rounded-xl text-xs tracking-wider uppercase shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-transform"
+          className="w-full max-w-[450px] bg-emerald-600 hover:bg-emerald-700 text-white text-center font-extrabold py-3.5 px-4 rounded-xl text-xs tracking-wider uppercase shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-all duration-300"
         >
           <ShoppingBag className="w-4.5 h-4.5 shrink-0" />
-          <span>اضغطي هنا لتأكيد الطلب 🛒</span>
+          <span>اطلبي الآن 🛒</span>
         </a>
       </div>
 
