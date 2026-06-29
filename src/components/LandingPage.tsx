@@ -6,6 +6,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { OFFERS, COLORS, REVIEWS } from '../data';
 import { ColorOption, Offer, Order } from '../types';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { 
   Sparkles, 
   Truck, 
@@ -188,19 +190,19 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard, orders = [
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleTrackOrder = (e: React.FormEvent) => {
+  const handleTrackOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setTrackingError('');
     setHasSearched(true);
 
-    const query = trackingInput.trim().toUpperCase();
-    if (!query) {
+    const queryInput = trackingInput.trim().toUpperCase();
+    if (!queryInput) {
       setTrackingError('يرجى إدخال رقم الطلب أو رقم الهاتف للبحث.');
       setTrackingResults([]);
       return;
     }
 
-    // Load latest orders from localStorage as fallback/primary to ensure real-time lookup
+    // 1. Try local search first (checks local storage or props orders)
     let currentOrders = orders;
     try {
       const saved = localStorage.getItem('hekaya_khait_orders');
@@ -211,24 +213,41 @@ export default function LandingPage({ onOrderSubmit, onGoToDashboard, orders = [
       // fallback
     }
 
-    const cleanPhoneQuery = query.replace(/[\s-()]/g, '');
+    const cleanPhoneQuery = queryInput.replace(/[\s-()]/g, '');
 
-    const found = currentOrders.filter(o => {
+    const localFound = currentOrders.filter(o => {
       const orderId = o.id.toUpperCase();
       const orderPhone = o.phone.replace(/[\s-()]/g, '');
       
-      const matchesId = orderId === query || orderId === `ORD-${query}` || orderId.endsWith(query);
+      const matchesId = orderId === queryInput || orderId === `ORD-${queryInput}` || orderId.endsWith(queryInput);
       const matchesPhone = cleanPhoneQuery.length >= 6 && (orderPhone.includes(cleanPhoneQuery) || cleanPhoneQuery.includes(orderPhone));
 
       return matchesId || matchesPhone;
     });
 
-    if (found.length === 0) {
-      setTrackingError('عذراً، لم نتمكن من العثور على أي طلب يطابق البيانات المدخلة. يرجى التأكد من الرقم والمحاولة مرة أخرى.');
-      setTrackingResults([]);
-    } else {
-      setTrackingResults(found);
+    if (localFound.length > 0) {
+      setTrackingResults(localFound);
+      return;
     }
+
+    // 2. If not found locally, and it looks like an Order ID, query Firestore directly
+    const looksLikeOrderId = queryInput.startsWith('ORD-') || /^[A-Z0-9-]{4,15}$/.test(queryInput);
+    if (looksLikeOrderId) {
+      const formattedId = queryInput.startsWith('ORD-') ? queryInput : `ORD-${queryInput}`;
+      try {
+        const docRef = doc(db, "orders", formattedId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setTrackingResults([docSnap.data() as Order]);
+          return;
+        }
+      } catch (err) {
+        // Fallback or ignore permission error
+      }
+    }
+
+    setTrackingError('عذراً، لم نتمكن من العثور على أي طلب يطابق البيانات المدخلة. يرجى التأكد من الرقم والمحاولة مرة أخرى.');
+    setTrackingResults([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

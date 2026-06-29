@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Represents an abaya purchase order.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The custom Order ID (e.g. ORD-1234)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The customer's full name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The customer's Jordanian phone number."
+        },
+        "offer": {
+          "type": "string",
+          "description": "The offer package selected."
+        },
+        "color": {
+          "type": "string",
+          "description": "The selected abaya color option."
+        },
+        "weight": {
+          "type": "number",
+          "description": "The customer's weight in kg."
+        },
+        "height": {
+          "type": "number",
+          "description": "The customer's height in cm."
+        },
+        "address": {
+          "type": "string",
+          "description": "The customer's detailed delivery address."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO date-time when the order was submitted."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "shipped", "cancelled"],
+          "description": "The workflow status of the order."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Internal tracking or delivery notes."
+        },
+        "totalPrice": {
+          "type": "number",
+          "description": "The total cost of the order in JOD."
+        }
+      },
+      "required": ["id", "name", "phone", "offer", "color", "weight", "height", "address", "date", "status", "totalPrice"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "The main collection storing customer orders."
+    }
+  }
+}

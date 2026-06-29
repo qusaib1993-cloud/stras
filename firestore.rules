@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net - default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Orders Collection Rules
+    match /orders/{orderId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if isValidId(orderId) 
+                    && isValidOrder(incoming()) 
+                    && (incoming().status == 'pending' || isAdmin());
+      
+      allow update: if isAdmin() 
+                    && isValidOrder(incoming())
+                    && incoming().id == existing().id
+                    && incoming().name == existing().name
+                    && incoming().phone == existing().phone
+                    && incoming().offer == existing().offer
+                    && incoming().color == existing().color
+                    && incoming().weight == existing().weight
+                    && incoming().height == existing().height
+                    && incoming().address == existing().address
+                    && incoming().totalPrice == existing().totalPrice
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes']);
+                    
+      allow delete: if false;
+    }
+
+    // Global and Custom Helper Functions
+    function isValidId(id) {
+      return id is string && id.size() >= 4 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() 
+             && request.auth.token.email_verified == true 
+             && request.auth.token.email == 'qusai.b1993@gmail.com';
+    }
+
+    function isValidOrder(data) {
+      return data.id is string && data.id.size() >= 4 && data.id.size() <= 64
+          && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+          && data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 20
+          && data.offer is string && data.offer.size() <= 150
+          && data.color is string && data.color.size() <= 100
+          && data.weight is number && data.weight >= 20 && data.weight <= 200
+          && data.height is number && data.height >= 100 && data.height <= 250
+          && data.address is string && data.address.size() >= 5 && data.address.size() <= 500
+          && data.date is string && data.date.size() <= 40
+          && data.status is string && (data.status == 'pending' || data.status == 'confirmed' || data.status == 'shipped' || data.status == 'cancelled')
+          && data.totalPrice is number && data.totalPrice >= 0 && data.totalPrice <= 1000
+          && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 1000));
+    }
+  }
+}
